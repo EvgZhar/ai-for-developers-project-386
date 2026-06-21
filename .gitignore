@@ -1,0 +1,28 @@
+# MacOS
+.DS_Store
+
+# Default TypeSpec output
+tsp-output/
+dist/
+
+# Dependency directories
+node_modules/
+
+# Server
+server/dist/
+server/.env
+
+# Client
+client/dist/
+
+# Prisma
+server/prisma/generated/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# PlayWright
+.playwright-mcp/

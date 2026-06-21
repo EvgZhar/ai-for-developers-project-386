@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-warm-50: #fef7ee;
+  --color-warm-100: #fdedd3;
+  --color-warm-200: #f9d8a6;
+  --color-warm-300: #f5bc6f;
+  --color-warm-400: #f09b3c;
+  --color-warm-500: #ec7f1a;
+  --color-warm-600: #dd6512;
+  --color-warm-700: #b74b11;
+  --color-warm-800: #923b16;
+  --color-warm-900: #763315;
+  --color-warm-950: #401808;
+
+  --color-clay-50: #faf6f3;
+  --color-clay-100: #f5ece4;
+  --color-clay-200: #e9d6c7;
+  --color-clay-300: #d9bba3;
+  --color-clay-400: #c79a7c;
+  --color-clay-500: #b88363;
+  --color-clay-600: #a87057;
+  --color-clay-700: #8d5b49;
+  --color-clay-800: #734b3f;
+  --color-clay-900: #5e4036;
+  --color-clay-950: #32201a;
+
+  --color-sage-50: #f5f8f1;
+  --color-sage-100: #e9efdd;
+  --color-sage-200: #d3e0be;
+  --color-sage-300: #b5cb97;
+  --color-sage-400: #96b372;
+  --color-sage-500: #789852;
+  --color-sage-600: #5e7a3e;
+  --color-sage-700: #4a5f33;
+  --color-sage-800: #3c4d2b;
+  --color-sage-900: #334026;
+  --color-sage-950: #192212;
+}
+
+body {
+  @apply bg-warm-50 text-clay-900 antialiased;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}

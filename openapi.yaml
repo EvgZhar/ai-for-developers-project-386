@@ -1,0 +1,829 @@
+openapi: 3.1.0
+info:
+  title: Calendar Booking API
+  version: 0.0.0
+tags: []
+paths:
+  /api/admin/bookings:
+    get:
+      operationId: AdminBookings_list
+      description: List bookings with optional date filter
+      parameters:
+        - name: dateFrom
+          in: query
+          required: false
+          description: 'Filter: bookings starting on or after this date (UTC)'
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: dateTo
+          in: query
+          required: false
+          description: 'Filter: bookings starting on or before this date (UTC)'
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: status
+          in: query
+          required: false
+          description: 'Filter: bookings status'
+          schema:
+            $ref: '#/components/schemas/BookingStatus'
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+  /api/admin/bookings/{id}/cancel:
+    post:
+      operationId: AdminBookingActions_cancel
+      description: Cancel a confirmed booking (confirmed → cancelled)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/admin/bookings/{id}/confirm:
+    post:
+      operationId: AdminBookingActions_confirm
+      description: Confirm a booking (requested → confirmed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/admin/bookings/{id}/reject:
+    post:
+      operationId: AdminBookingActions_reject
+      description: Reject a booking (requested → rejected)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/admin/event-types:
+    post:
+      operationId: AdminEventTypes_create
+      description: Create a new event type
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTypeCreate'
+    get:
+      operationId: AdminEventTypes_list
+      description: List all event types (including inactive)
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+  /api/admin/event-types/{id}:
+    get:
+      operationId: AdminEventType_get
+      description: Get event type by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+    put:
+      operationId: AdminEventType_update
+      description: Update an existing event type
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/NotFoundError'
+                  - $ref: '#/components/schemas/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTypeUpdate'
+    delete:
+      operationId: AdminEventType_delete
+      description: Delete an event type
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/admin/schedule:
+    get:
+      operationId: AdminSchedule_get
+      description: Get the current working schedule
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+    put:
+      operationId: AdminSchedule_update
+      description: Update the working schedule (replaces all existing rules)
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleOverlapError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Schedule'
+  /api/bookings:
+    post:
+      operationId: PublicBookings_create
+      description: Create a new booking on an available slot
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/SlotConflictError'
+                  - $ref: '#/components/schemas/ValidationError'
+                  - $ref: '#/components/schemas/NotFoundError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+    get:
+      operationId: PublicBookings_list
+      description: List bookings for a guest profile
+      parameters:
+        - name: guestProfileId
+          in: query
+          required: true
+          description: Guest profile ID to filter by
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+  /api/bookings/{id}:
+    get:
+      operationId: PublicBooking_get
+      description: Get booking details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/bookings/{id}/cancel:
+    post:
+      operationId: cancelBooking
+      description: 'Public: cancel a booking'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/event-types:
+    get:
+      operationId: PublicEventTypes_list
+      description: List all active event types available for booking
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+  /api/event-types/{eventTypeId}/slots:
+    get:
+      operationId: Slots_getAvailable
+      description: Get available slots within a date range (max 14 days window)
+      parameters:
+        - name: eventTypeId
+          in: path
+          required: true
+          description: Event type ID
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          required: true
+          description: Start of the window (UTC)
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: dateTo
+          in: query
+          required: true
+          description: End of the window (UTC), dateTo - dateFrom <= 14 days
+          schema:
+            type: string
+            format: date-time
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AvailableSlot'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /api/event-types/{id}:
+    get:
+      operationId: PublicEventType_get
+      description: Get event type details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /api/profiles:
+    get:
+      operationId: Profiles_list
+      description: List all available profiles (admin + guests)
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+    post:
+      operationId: Profiles_create
+      description: Create a new guest profile
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileCreate'
+  /api/profiles/{id}:
+    put:
+      operationId: ProfileItem_update
+      description: Update profile (name, locale, timeZone)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileCreate'
+    delete:
+      operationId: ProfileItem_delete
+      description: Delete a guest profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+components:
+  schemas:
+    AvailableSlot:
+      type: object
+      required:
+        - startDateTime
+        - endDateTime
+      properties:
+        startDateTime:
+          type: string
+          format: date-time
+          description: Slot start datetime in UTC
+        endDateTime:
+          type: string
+          format: date-time
+          description: Slot end datetime in UTC
+      description: Available time slot for booking (computed on the fly)
+    Booking:
+      type: object
+      required:
+        - id
+        - eventTypeId
+        - startDateTime
+        - endDateTime
+        - guestProfileId
+        - guestName
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier
+        eventTypeId:
+          type: string
+          description: ID of the booked event type
+        startDateTime:
+          type: string
+          format: date-time
+          description: Meeting start datetime in UTC
+        endDateTime:
+          type: string
+          format: date-time
+          description: Meeting end datetime in UTC (start + event type duration)
+        agenda:
+          type: string
+          description: Optional meeting agenda or notes
+        guestProfileId:
+          type: string
+          description: ID of the guest profile who booked
+        guestName:
+          type: string
+          description: Display name of the guest
+        status:
+          allOf:
+            - $ref: '#/components/schemas/BookingStatus'
+          description: Booking lifecycle status
+        createdAt:
+          type: string
+          format: date-time
+          description: Booking creation timestamp in UTC
+        cancelledAt:
+          type: string
+          format: date-time
+          description: Cancellation timestamp in UTC
+      description: A confirmed booking (meeting)
+    BookingCreate:
+      type: object
+      required:
+        - eventTypeId
+        - startDateTime
+        - guestProfileId
+      properties:
+        eventTypeId:
+          type: string
+          description: ID of the event type to book
+        startDateTime:
+          type: string
+          format: date-time
+          description: Desired start datetime in UTC
+        agenda:
+          type: string
+          description: Optional meeting agenda or notes
+        guestProfileId:
+          type: string
+          description: ID of the guest profile making the booking
+      description: Request to create a new booking
+    BookingStatus:
+      type: string
+      enum:
+        - requested
+        - confirmed
+        - rejected
+        - cancelled
+    DaySchedule:
+      type: object
+      required:
+        - dayOfWeek
+        - intervals
+      properties:
+        dayOfWeek:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 6
+          description: 'Day of week: 0=Sunday, 1=Monday, ..., 6=Saturday'
+        intervals:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeInterval'
+          description: Non-overlapping working intervals for this day
+      description: Working schedule for a specific day of the week
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: string
+      description: Generic error response
+    EventType:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - durationMinutes
+        - isActive
+      properties:
+        id:
+          type: string
+          description: Unique identifier
+        title:
+          type: string
+          description: Event title
+        description:
+          type: string
+          description: Event description shown to guests
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 15
+          description: Duration in minutes
+        isActive:
+          type: boolean
+          description: Whether this event type is available for booking
+      description: Type of event that a guest can book
+    EventTypeCreate:
+      type: object
+      required:
+        - title
+        - description
+        - durationMinutes
+      properties:
+        title:
+          type: string
+          description: Event title
+        description:
+          type: string
+          description: Event description shown to guests
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 15
+          description: Duration in minutes (min 15)
+      description: Request to create a new event type
+    EventTypeUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Event title
+        description:
+          type: string
+          description: Event description shown to guests
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 15
+          description: Duration in minutes (min 15)
+        isActive:
+          type: boolean
+          description: Whether this event type is available for booking
+      description: Request to update an existing event type
+    NotFoundError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - NOT_FOUND
+        message:
+          type: string
+      description: Resource not found
+    Profile:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - locale
+        - timeZone
+      properties:
+        id:
+          type: string
+          description: Unique identifier
+        name:
+          type: string
+          description: Display name
+        type:
+          allOf:
+            - $ref: '#/components/schemas/ProfileType'
+          description: Profile role
+        locale:
+          type: string
+          description: Locale code (e.g. en-US, ru-RU)
+        timeZone:
+          type: string
+          description: IANA timezone (e.g. Europe/Moscow, America/New_York)
+      description: User profile for selecting a role on the start page
+    ProfileCreate:
+      type: object
+      required:
+        - name
+        - locale
+        - timeZone
+      properties:
+        name:
+          type: string
+          description: Display name
+        locale:
+          type: string
+          description: Locale code (e.g. en-US, ru-RU)
+        timeZone:
+          type: string
+          description: IANA timezone (e.g. Europe/Moscow)
+      description: Request to create a new guest profile
+    ProfileType:
+      type: string
+      enum:
+        - admin
+        - guest
+    Schedule:
+      type: object
+      required:
+        - timeZone
+        - days
+      properties:
+        timeZone:
+          type: string
+          description: IANA timezone for all intervals
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DaySchedule'
+          description: Schedule for each day of the week
+      description: Weekly working schedule for the calendar owner
+    ScheduleOverlapError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - SCHEDULE_OVERLAP
+        message:
+          type: string
+      description: Schedule interval overlap detected
+    SlotConflictError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - SLOT_ALREADY_BOOKED
+        message:
+          type: string
+      description: Slot is already booked by another booking
+    TimeInterval:
+      type: object
+      required:
+        - startTime
+        - endTime
+      properties:
+        startTime:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: Start time in HH:mm format (owner's timezone)
+        endTime:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          description: End time in HH:mm format (owner's timezone)
+      description: Working time interval within a single day, in owner's local timezone
+    ValidationError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+        message:
+          type: string
+        details:
+          type: string
+      description: Request validation failed
+servers:
+  - url: http://localhost:3000
+    description: Development server
+    variables: {}
