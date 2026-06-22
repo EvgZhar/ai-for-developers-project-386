@@ -1,45 +1,18 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api/client'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
+import { localEventTypes } from '../../lib/eventTypes'
 import type { EventType } from '../../api/types'
 
 export function EventTypes() {
-  const queryClient = useQueryClient()
+  const [types, setTypes] = useState<EventType[]>(() => localEventTypes.list())
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<EventType | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [duration, setDuration] = useState(30)
 
-  const { data: types, isLoading } = useQuery({
-    queryKey: ['admin-event-types'],
-    queryFn: api.admin.eventTypes.list,
-  })
-
-  const createMutation = useMutation({
-    mutationFn: (body: { title: string; description: string; durationMinutes: number }) =>
-      api.admin.eventTypes.create(body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-event-types'] })
-      resetForm()
-    },
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: { title?: string; description?: string; durationMinutes?: number; isActive?: boolean } }) =>
-      api.admin.eventTypes.update(id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-event-types'] })
-      resetForm()
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.admin.eventTypes.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-event-types'] }),
-  })
+  const refresh = () => setTypes(localEventTypes.list())
 
   const resetForm = () => {
     setShowForm(false)
@@ -62,20 +35,19 @@ export function EventTypes() {
     if (!title.trim() || !description.trim()) return
 
     if (editing) {
-      updateMutation.mutate({
-        id: editing.id,
-        body: { title, description, durationMinutes: duration },
-      })
+      localEventTypes.update(editing.id, { title, description, durationMinutes: duration })
     } else {
-      createMutation.mutate({ title, description, durationMinutes: duration })
+      localEventTypes.create({ title, description, durationMinutes: duration })
     }
+    refresh()
+    resetForm()
   }
 
-  const toggleActive = (type: EventType) => {
-    updateMutation.mutate({
-      id: type.id,
-      body: { isActive: !type.isActive },
-    })
+  const handleDelete = (id: string) => {
+    if (confirm('Удалить тип события?')) {
+      localEventTypes.delete(id)
+      refresh()
+    }
   }
 
   return (
@@ -127,7 +99,7 @@ export function EventTypes() {
               />
             </div>
             <div className="flex gap-3">
-              <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
+              <Button type="submit">
                 {editing ? 'Сохранить' : 'Создать'}
               </Button>
               <Button type="button" variant="ghost" onClick={resetForm}>
@@ -138,11 +110,7 @@ export function EventTypes() {
         </Card>
       )}
 
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="animate-spin h-8 w-8 border-4 border-warm-300 border-t-warm-600 rounded-full" />
-        </div>
-      ) : !types?.length ? (
+      {!types?.length ? (
         <Card className="text-center py-12">
           <p className="text-clay-500">Нет типов событий</p>
         </Card>
@@ -152,36 +120,22 @@ export function EventTypes() {
             <Card key={type.id}>
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <h3 className="font-medium text-clay-900">{type.title}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      type.isActive
-                        ? 'bg-sage-100 text-sage-800'
-                        : 'bg-clay-100 text-clay-500'
-                    }`}>
-                      {type.isActive ? 'Активен' : 'Неактивен'}
+                    <span className="text-xs text-warm-500 font-medium">
+                      · {type.durationMinutes} мин
                     </span>
                   </div>
                   <p className="text-sm text-clay-500 mt-1">{type.description}</p>
-                  <span className="text-xs text-warm-500 font-medium mt-1 inline-block">
-                    {type.durationMinutes} мин
-                  </span>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button size="sm" variant="ghost" onClick={() => startEdit(type)}>
                     ✏️
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => toggleActive(type)}>
-                    {type.isActive ? '🔒' : '🔓'}
-                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => {
-                      if (confirm('Удалить тип события?')) {
-                        deleteMutation.mutate(type.id)
-                      }
-                    }}
+                    onClick={() => handleDelete(type.id)}
                   >
                     🗑️
                   </Button>

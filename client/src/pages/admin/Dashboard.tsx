@@ -1,50 +1,39 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api/client'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { StatusBadge } from '../../components/StatusBadge'
 import { getStoredLocale, formatDate, formatTime } from '../../lib/dateUtils'
-import type { BookingStatus } from '../../api/types'
+import { localProfiles } from '../../lib/auth'
+import { localEventTypes } from '../../lib/eventTypes'
+import { localBookings } from '../../lib/bookings'
+import type { BookingStatus, Booking } from '../../api/types'
 
 export function Dashboard() {
   const [statusFilter, setStatusFilter] = useState<BookingStatus | ''>('')
-  const queryClient = useQueryClient()
   const locale = getStoredLocale()
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ['admin-bookings', statusFilter],
-    queryFn: () => api.admin.bookings.list(statusFilter ? { status: statusFilter } : undefined),
-  })
-
-  const { data: eventTypes } = useQuery({
-    queryKey: ['event-types'],
-    queryFn: api.eventTypes.list,
-  })
-
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: api.profiles.list,
-  })
+  const eventTypes = localEventTypes.list()
+  const profiles = localProfiles.list()
+  const bookings: Booking[] = localBookings.listByStatus(statusFilter)
 
   const getEventTitle = (id: string) => eventTypes?.find((t) => t.id === id)?.title || id
-
   const getGuestInfo = (id: string) => profiles?.find((p) => p.id === id)
 
-  const confirmMutation = useMutation({
-    mutationFn: (id: string) => api.admin.bookings.confirm(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-bookings'] }),
-  })
+  const handleConfirm = (id: string) => {
+    localBookings.confirm(id)
+    setRefreshKey((k) => k + 1)
+  }
 
-  const rejectMutation = useMutation({
-    mutationFn: (id: string) => api.admin.bookings.reject(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-bookings'] }),
-  })
+  const handleReject = (id: string) => {
+    localBookings.reject(id)
+    setRefreshKey((k) => k + 1)
+  }
 
-  const cancelMutation = useMutation({
-    mutationFn: (id: string) => api.admin.bookings.cancel(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-bookings'] }),
-  })
+  const handleCancel = (id: string) => {
+    localBookings.cancel(id)
+    setRefreshKey((k) => k + 1)
+  }
 
   const filterTabs: { label: string; value: BookingStatus | '' }[] = [
     { label: 'Все', value: '' },
@@ -55,7 +44,7 @@ export function Dashboard() {
   ]
 
   return (
-    <div>
+    <div key={refreshKey}>
       <h1 className="text-2xl font-bold text-clay-900 mb-6">Бронирования</h1>
 
       <div className="flex gap-2 mb-6 flex-wrap">
@@ -74,11 +63,7 @@ export function Dashboard() {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="animate-spin h-8 w-8 border-4 border-warm-300 border-t-warm-600 rounded-full" />
-        </div>
-      ) : !bookings?.length ? (
+      {!bookings?.length ? (
         <Card className="text-center py-12">
           <p className="text-clay-500">Нет бронирований</p>
         </Card>
@@ -118,16 +103,14 @@ export function Dashboard() {
                       <Button
                         size="sm"
                         variant="primary"
-                        loading={confirmMutation.isPending}
-                        onClick={() => confirmMutation.mutate(booking.id)}
+                        onClick={() => handleConfirm(booking.id)}
                       >
                         Подтвердить
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        loading={rejectMutation.isPending}
-                        onClick={() => rejectMutation.mutate(booking.id)}
+                        onClick={() => handleReject(booking.id)}
                       >
                         Отклонить
                       </Button>
@@ -137,8 +120,7 @@ export function Dashboard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      loading={cancelMutation.isPending}
-                      onClick={() => cancelMutation.mutate(booking.id)}
+                      onClick={() => handleCancel(booking.id)}
                     >
                       Отменить
                     </Button>

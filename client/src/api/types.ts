@@ -36,7 +36,12 @@ export interface EventType {
   title: string
   description: string
   durationMinutes: number
-  isActive: boolean
+}
+
+export interface EventTypeUpdate {
+  title?: string
+  description?: string
+  durationMinutes?: number
 }
 
 export interface EventTypeCreate {
@@ -45,12 +50,7 @@ export interface EventTypeCreate {
   durationMinutes: number
 }
 
-export interface EventTypeUpdate {
-  title?: string
-  description?: string
-  durationMinutes?: number
-  isActive?: boolean
-}
+
 
 export interface AvailableSlot {
   startDateTime: string

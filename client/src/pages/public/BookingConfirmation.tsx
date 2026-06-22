@@ -3,12 +3,11 @@ import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { StatusBadge } from '../../components/StatusBadge'
 import { getStoredLocale, formatDate, formatTime } from '../../lib/dateUtils'
-import type { Booking, EventType, Profile } from '../../api/types'
+import type { Booking, EventType } from '../../api/types'
 
 interface LocationState {
   booking: Booking
   eventType: EventType
-  profile: Profile
 }
 
 export function BookingConfirmation() {
@@ -55,7 +54,7 @@ export function BookingConfirmation() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <Link to={`/bookings?guestProfileId=${booking.guestProfileId}`}>
+          <Link to="/bookings">
             <Button variant="secondary" className="w-full">Мои бронирования</Button>
           </Link>
           <Link to="/">

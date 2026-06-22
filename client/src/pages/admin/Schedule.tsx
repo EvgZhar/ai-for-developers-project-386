@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api/client'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { getStoredLocale, getDayNames, getDayLabels } from '../../lib/dateUtils'
+import { localSchedule } from '../../lib/schedule'
 import type { TimeInterval } from '../../api/types'
 
+interface DayState {
+  dayOfWeek: number
+  enabled: boolean
+  intervals: TimeInterval[]
+}
+
 export function Schedule() {
-  const queryClient = useQueryClient()
   const [timeZone, setTimeZone] = useState('Europe/Moscow')
   const locale = getStoredLocale()
   const dayNames = getDayNames(locale)
@@ -19,35 +23,22 @@ export function Schedule() {
       intervals: [{ startTime: '09:00', endTime: '18:00' }],
     }))
   )
-
-  const { data: schedule } = useQuery({
-    queryKey: ['admin-schedule'],
-    queryFn: () => api.admin.schedule.get().catch(() => null),
-  })
+  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (schedule) {
-      setTimeZone(schedule.timeZone)
-      setDays(
-        Array.from({ length: 7 }, (_, i) => {
-          const existing = schedule.days.find((d) => d.dayOfWeek === i)
-          return {
-            dayOfWeek: i,
-            enabled: !!existing,
-            intervals: existing?.intervals || [{ startTime: '09:00', endTime: '18:00' }],
-          }
-        })
-      )
-    }
-  }, [schedule])
-
-  const updateMutation = useMutation({
-    mutationFn: (body: { timeZone: string; days: { dayOfWeek: number; intervals: TimeInterval[] }[] }) =>
-      api.admin.schedule.update(body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-schedule'] })
-    },
-  })
+    const schedule = localSchedule.get()
+    setTimeZone(schedule.timeZone)
+    setDays(
+      Array.from({ length: 7 }, (_, i) => {
+        const existing = schedule.days.find((d) => d.dayOfWeek === i)
+        return {
+          dayOfWeek: i,
+          enabled: !!existing,
+          intervals: existing?.intervals || [{ startTime: '09:00', endTime: '18:00' }],
+        }
+      })
+    )
+  }, [])
 
   const toggleDay = (index: number) => {
     setDays((prev) =>
@@ -99,7 +90,9 @@ export function Schedule() {
         dayOfWeek: d.dayOfWeek,
         intervals: d.intervals,
       }))
-    updateMutation.mutate({ timeZone, days: filteredDays })
+    localSchedule.update({ timeZone, days: filteredDays })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   return (
@@ -187,19 +180,11 @@ export function Schedule() {
       </div>
 
       <div className="mt-6">
-        <Button
-          onClick={handleSave}
-          loading={updateMutation.isPending}
-        >
+        <Button onClick={handleSave}>
           Сохранить расписание
         </Button>
-        {updateMutation.isSuccess && (
+        {saved && (
           <span className="ml-3 text-sm text-sage-600">Сохранено</span>
-        )}
-        {updateMutation.isError && (
-          <span className="ml-3 text-sm text-red-500">
-            Ошибка: {updateMutation.error?.message}
-          </span>
         )}
       </div>
     </div>

@@ -1,44 +1,36 @@
-import { useSearchParams, Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api/client'
+import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { StatusBadge } from '../../components/StatusBadge'
 import { getStoredLocale, formatDate, formatTime } from '../../lib/dateUtils'
+import { useAuth, localProfiles } from '../../lib/auth'
+import { localEventTypes } from '../../lib/eventTypes'
+import { localBookings } from '../../lib/bookings'
 
 export function MyBookings() {
-  const [searchParams] = useSearchParams()
-  const guestProfileId = searchParams.get('guestProfileId')
+  const { profile } = useAuth()
   const locale = getStoredLocale()
-  const queryClient = useQueryClient()
+  const currentProfileId = profile?.id || ''
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: api.profiles.list,
-  })
+  const eventTypes = useMemo(() => localEventTypes.list(), [])
 
-  const guestProfiles = profiles?.filter((p) => p.type === 'guest') || []
-  const selectedProfileId = guestProfileId || guestProfiles[0]?.id || ''
+  const bookings = useMemo(
+    () => (currentProfileId ? localBookings.listByGuest(currentProfileId) : []),
+    [currentProfileId, refreshKey]
+  )
 
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ['guest-bookings', selectedProfileId],
-    queryFn: () => api.bookings.listByGuest(selectedProfileId),
-    enabled: !!selectedProfileId,
-  })
-
-  const cancelMutation = useMutation({
-    mutationFn: (id: string) => api.bookings.cancel(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guest-bookings'] })
-    },
-  })
-
-  const { data: eventTypes } = useQuery({
-    queryKey: ['event-types'],
-    queryFn: api.eventTypes.list,
-  })
+  const guestProfiles = localProfiles.list().filter((p) => p.type === 'guest')
 
   const getEventTitle = (id: string) => eventTypes?.find((t) => t.id === id)?.title || id
+
+  const handleCancel = (id: string) => {
+    if (confirm('Отменить бронь?')) {
+      localBookings.cancel(id)
+      setRefreshKey((k) => k + 1)
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
@@ -49,40 +41,38 @@ export function MyBookings() {
         </Link>
       </div>
 
-      {selectedProfileId && (
+      {profile && (
         <div className="mb-6">
           <label className="text-xs text-clay-400 uppercase tracking-wider block mb-2">Профиль</label>
           <div className="flex gap-2 flex-wrap">
             {guestProfiles.map((p) => (
               <div key={p.id} className="flex items-center gap-1">
-                <Link
-                  to={`/bookings?guestProfileId=${p.id}`}
+                <span
                   className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    p.id === selectedProfileId
+                    p.id === currentProfileId
                       ? 'bg-warm-500 text-white'
-                      : 'bg-clay-100 text-clay-600 hover:bg-clay-200'
+                      : 'bg-clay-100 text-clay-600'
                   }`}
                 >
                   {p.name}
-                </Link>
-                <Link
-                  to={`/profile/${p.id}`}
-                  className="text-xs text-clay-400 hover:text-warm-600 transition-colors px-1"
-                  title="Настройки профиля"
-                >
-                  ✏️
-                </Link>
+                  {p.id === currentProfileId && ' ✓'}
+                </span>
+                {p.id === currentProfileId && (
+                  <Link
+                    to={`/profile/${p.id}`}
+                    className="text-xs text-clay-400 hover:text-warm-600 transition-colors px-1"
+                    title="Настройки профиля"
+                  >
+                    ✏️
+                  </Link>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="animate-spin h-8 w-8 border-4 border-warm-300 border-t-warm-600 rounded-full" />
-        </div>
-      ) : !bookings?.length ? (
+      {!bookings?.length ? (
         <Card className="text-center py-12">
           <p className="text-clay-500 mb-4">У вас пока нет бронирований</p>
           <Link to="/">
@@ -108,12 +98,7 @@ export function MyBookings() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  loading={cancelMutation.isPending}
-                  onClick={() => {
-                    if (confirm('Отменить бронь?')) {
-                      cancelMutation.mutate(booking.id)
-                    }
-                  }}
+                  onClick={() => handleCancel(booking.id)}
                 >
                   Отменить
                 </Button>

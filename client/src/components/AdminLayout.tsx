@@ -1,4 +1,5 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth'
 
 const navItems = [
   { path: '/admin', label: 'Бронирования', icon: '📅' },
@@ -9,6 +10,8 @@ const navItems = [
 
 export function AdminLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { profile, logout } = useAuth()
 
   return (
     <div className="min-h-screen flex">
@@ -39,7 +42,18 @@ export function AdminLayout() {
             )
           })}
         </nav>
-        <div className="p-4 border-t border-clay-700">
+        <div className="p-4 border-t border-clay-700 space-y-2">
+          {profile && (
+            <div className="text-xs text-clay-400 px-3">
+              👑 {profile.name}
+            </div>
+          )}
+          <button
+            onClick={() => { logout(); navigate('/') }}
+            className="flex items-center gap-2 text-xs text-clay-400 hover:text-red-400 transition-colors cursor-pointer w-full px-3 py-1"
+          >
+            ← Выйти
+          </button>
           <Link
             to="/"
             className="flex items-center gap-2 text-xs text-clay-400 hover:text-clay-200 transition-colors"

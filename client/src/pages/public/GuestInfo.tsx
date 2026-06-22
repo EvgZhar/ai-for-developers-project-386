@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
-import { api } from '../../api/client'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { setStoredLocale } from '../../lib/dateUtils'
+import { useAuth, localProfiles } from '../../lib/auth'
+import { localBookings } from '../../lib/bookings'
 import type { AvailableSlot, EventType } from '../../api/types'
 
 interface LocationState {
@@ -17,21 +17,14 @@ export function GuestInfo() {
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as LocationState | null
+  const { profile, isAuthenticated } = useAuth()
 
-  const [name, setName] = useState('')
+  const [name, setName] = useState(profile?.name || '')
   const [agenda, setAgenda] = useState('')
   const [locale] = useState('ru-RU')
   const [timeZone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
-
-  const createProfile = useMutation({
-    mutationFn: (body: { name: string; locale: string; timeZone: string }) =>
-      api.profiles.create(body),
-  })
-
-  const createBooking = useMutation({
-    mutationFn: (body: { eventTypeId: string; startDateTime: string; agenda?: string; guestProfileId: string }) =>
-      api.bookings.create(body),
-  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   if (!state) {
     navigate(`/book/${eventTypeId}`)
@@ -43,21 +36,33 @@ export function GuestInfo() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    setLoading(true)
+    setError('')
 
     try {
-      const profile = await createProfile.mutateAsync({ name, locale, timeZone })
+      let guestProfileId: string
+
+      if (isAuthenticated && profile) {
+        guestProfileId = profile.id
+      } else {
+        const newProfile = localProfiles.create({ name, locale, timeZone })
+        guestProfileId = newProfile.id
+      }
+
       setStoredLocale(locale)
-      const booking = await createBooking.mutateAsync({
+      const booking = localBookings.create({
         eventTypeId: eventTypeId!,
         startDateTime: slot.startDateTime,
         agenda: agenda || undefined,
-        guestProfileId: profile.id,
+        guestProfileId,
       })
+
       navigate(`/booking/${booking.id}`, {
-        state: { booking, eventType, profile },
+        state: { booking, eventType },
       })
-    } catch {
-      // error handled by mutation state
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось создать бронь')
+      setLoading(false)
     }
   }
 
@@ -98,7 +103,13 @@ export function GuestInfo() {
                 placeholder:text-clay-400 focus:outline-none focus:ring-2 focus:ring-warm-300 focus:border-warm-400 transition-all"
               placeholder="Иван Иванов"
               required
+              disabled={isAuthenticated}
             />
+            {isAuthenticated && (
+              <p className="text-xs text-clay-400 mt-1">
+                Используется текущий профиль
+              </p>
+            )}
           </div>
 
           <div>
@@ -118,15 +129,13 @@ export function GuestInfo() {
           <div className="flex items-center gap-4 pt-2">
             <Button
               type="submit"
-              loading={createProfile.isPending || createBooking.isPending}
+              loading={loading}
               disabled={!name.trim()}
             >
               Подтвердить бронь
             </Button>
-            {createBooking.isError && (
-              <span className="text-sm text-red-500">
-                Ошибка: {createBooking.error?.message || 'Не удалось создать бронь'}
-              </span>
+            {error && (
+              <span className="text-sm text-red-500">{error}</span>
             )}
           </div>
         </form>

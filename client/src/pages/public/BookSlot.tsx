@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { addDays, format, startOfDay, isSameDay, isBefore } from 'date-fns'
-import { api } from '../../api/client'
 import { Card } from '../../components/Card'
 import { getStoredLocale, getDayLabels, getMonthNames, formatShortDate } from '../../lib/dateUtils'
+import { localEventTypes } from '../../lib/eventTypes'
+import { localSlots } from '../../lib/slots'
 
 export function BookSlot() {
   const { eventTypeId } = useParams<{ eventTypeId: string }>()
@@ -18,20 +18,18 @@ export function BookSlot() {
   const dateFrom = format(today, "yyyy-MM-dd'T'00:00:00'Z'")
   const dateTo = format(addDays(today, 14), "yyyy-MM-dd'T'23:59:59'Z'")
 
-  const { data: type } = useQuery({
-    queryKey: ['event-type', eventTypeId],
-    queryFn: () => api.eventTypes.get(eventTypeId!),
-    enabled: !!eventTypeId,
-  })
+  const type = useMemo(
+    () => (eventTypeId ? localEventTypes.get(eventTypeId) : undefined),
+    [eventTypeId]
+  )
 
-  const { data: slots, isLoading } = useQuery({
-    queryKey: ['slots', eventTypeId, dateFrom, dateTo],
-    queryFn: () => api.slots.getAvailable(eventTypeId!, dateFrom, dateTo),
-    enabled: !!eventTypeId,
-  })
+  const slots = useMemo(
+    () => (eventTypeId ? localSlots.getAvailable(eventTypeId, dateFrom, dateTo) : []),
+    [eventTypeId, dateFrom, dateTo]
+  )
 
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, i))
-  const daySlots = slots?.filter((s) => isSameDay(new Date(s.startDateTime), selectedDate)) || []
+  const daySlots = slots.filter((s) => isSameDay(new Date(s.startDateTime), selectedDate))
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
@@ -78,11 +76,7 @@ export function BookSlot() {
           <h2 className="text-sm font-semibold text-clay-700 mb-4 uppercase tracking-wider">
             Время — {formatShortDate(selectedDate, locale)}
           </h2>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-3 border-warm-300 border-t-warm-600 rounded-full" />
-            </div>
-          ) : daySlots.length === 0 ? (
+          {daySlots.length === 0 ? (
             <p className="text-clay-400 text-sm py-8 text-center">Нет доступных слотов на этот день</p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">

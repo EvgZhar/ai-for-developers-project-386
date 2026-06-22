@@ -1,22 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { api } from '../../api/client'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
+import { useAuth } from '../../lib/auth'
+import { localEventTypes } from '../../lib/eventTypes'
 
 export function Landing() {
-  const { data: types, isLoading } = useQuery({
-    queryKey: ['event-types'],
-    queryFn: api.eventTypes.list,
-  })
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="animate-spin h-8 w-8 border-4 border-warm-300 border-t-warm-600 rounded-full" />
-      </div>
-    )
-  }
+  const navigate = useNavigate()
+  const { profile, isAuthenticated, isAdmin, loginAsAdmin, logout } = useAuth()
+  const [types] = useState(() => localEventTypes.list())
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
@@ -34,11 +26,11 @@ export function Landing() {
           <Card key={type.id} className="group hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-clay-900">{type.title}</h3>
-                <p className="text-sm text-clay-500 mt-1">{type.description}</p>
-                <span className="text-xs text-warm-500 font-medium mt-2 inline-block">
-                  {type.durationMinutes} мин
-                </span>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="text-lg font-semibold text-clay-900">{type.title}</h3>
+                  <span className="text-sm text-warm-500 font-medium">· {type.durationMinutes} мин</span>
+                </div>
+                <p className="text-sm text-clay-500">{type.description}</p>
               </div>
               <Link to={`/book/${type.id}`}>
                 <Button size="sm">Выбрать</Button>
@@ -48,20 +40,60 @@ export function Landing() {
         ))}
       </div>
 
-      <div className="mt-8 text-center">
-        <Link
-          to="/admin"
-          className="text-sm text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2"
-        >
-          Войти как владелец
-        </Link>
-        <span className="mx-2 text-clay-300">·</span>
-        <Link
-          to="/bookings"
-          className="text-sm text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2"
-        >
-          Мои бронирования
-        </Link>
+      <div className="mt-12 text-center space-y-2">
+        {isAuthenticated ? (
+          <div className="flex items-center justify-center gap-3 text-sm">
+            <span className="text-clay-500">
+              {isAdmin ? '👑' : '👤'} {profile?.name}
+            </span>
+            <span className="text-clay-300">·</span>
+            {isAdmin ? (
+              <Link
+                to="/admin"
+                className="text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2"
+              >
+                Панель управления
+              </Link>
+            ) : (
+              <Link
+                to="/bookings"
+                className="text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2"
+              >
+                Мои бронирования
+              </Link>
+            )}
+            <span className="text-clay-300">·</span>
+            <button
+              onClick={() => { logout(); navigate('/') }}
+              className="text-clay-400 hover:text-red-500 transition-colors underline underline-offset-2 cursor-pointer"
+            >
+              Выйти
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <button
+              onClick={() => { loginAsAdmin(); navigate('/admin') }}
+              className="text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2 cursor-pointer"
+            >
+              Войти как владелец
+            </button>
+            <span className="text-clay-300">·</span>
+            <Link
+              to="/login"
+              className="text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2"
+            >
+              Войти как гость
+            </Link>
+            <span className="text-clay-300">·</span>
+            <Link
+              to="/bookings"
+              className="text-clay-400 hover:text-warm-600 transition-colors underline underline-offset-2"
+            >
+              Мои бронирования
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

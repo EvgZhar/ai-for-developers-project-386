@@ -1,6 +1,9 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth'
 
 export function PublicLayout() {
+  const navigate = useNavigate()
+  const { profile, isAuthenticated, isAdmin, logout } = useAuth()
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -19,6 +22,32 @@ export function PublicLayout() {
             >
               Типы встреч
             </Link>
+            {isAuthenticated && (
+              <>
+                {isAdmin ? (
+                  <Link
+                    to="/admin"
+                    className="text-clay-600 hover:text-warm-600 transition-colors"
+                  >
+                    Панель управления
+                  </Link>
+                ) : (
+                  <Link
+                    to="/bookings"
+                    className="text-clay-600 hover:text-warm-600 transition-colors"
+                  >
+                    Мои бронирования
+                  </Link>
+                )}
+                <span className="text-clay-400 text-xs">{profile?.name}</span>
+                <button
+                  onClick={() => { logout(); navigate('/') }}
+                  className="text-clay-400 hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  Выйти
+                </button>
+              </>
+            )}
           </nav>
         </div>
       </header>

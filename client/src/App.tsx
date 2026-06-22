@@ -1,8 +1,12 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from './lib/auth'
+import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute'
 import { PublicLayout } from './components/PublicLayout'
 import { AdminLayout } from './components/AdminLayout'
 import { Landing } from './pages/public/Landing'
+import { Login } from './pages/public/Login'
+import { Register } from './pages/public/Register'
 import { BookSlot } from './pages/public/BookSlot'
 import { GuestInfo } from './pages/public/GuestInfo'
 import { BookingConfirmation } from './pages/public/BookingConfirmation'
@@ -30,26 +34,40 @@ const router = createBrowserRouter([
       { path: '/book/:eventTypeId', element: <BookSlot /> },
       { path: '/book/:eventTypeId/info', element: <GuestInfo /> },
       { path: '/booking/:bookingId', element: <BookingConfirmation /> },
-      { path: '/bookings', element: <MyBookings /> },
-      { path: '/profile/:profileId', element: <EditProfile /> },
+      { path: '/login', element: <Login /> },
+      { path: '/register', element: <Register /> },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: '/bookings', element: <MyBookings /> },
+          { path: '/profile/:profileId', element: <EditProfile /> },
+        ],
+      },
     ],
   },
   {
-    path: '/admin',
-    element: <AdminLayout />,
+    element: <AdminRoute />,
     children: [
-      { index: true, element: <Dashboard /> },
-      { path: 'schedule', element: <Schedule /> },
-      { path: 'event-types', element: <EventTypes /> },
-      { path: 'settings', element: <AdminSettings /> },
+      {
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: 'schedule', element: <Schedule /> },
+          { path: 'event-types', element: <EventTypes /> },
+          { path: 'settings', element: <AdminSettings /> },
+        ],
+      },
     ],
   },
 ])
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </AuthProvider>
   )
 }
