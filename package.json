@@ -1,6 +1,14 @@
 {
   "name": "calendar-booking-api",
   "private": true,
+  "scripts": {
+    "dev": "concurrently -n prism,vite -c blue,green \"prism mock openapi.yaml -p 4010\" \"npm run dev --prefix client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:prism": "prism mock openapi.yaml -p 4010"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
   "dependencies": {
     "@typespec/compiler": "~1.13.0",
     "@typespec/http": "~1.13.0",

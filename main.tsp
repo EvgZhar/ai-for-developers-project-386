@@ -90,8 +90,6 @@ model EventType {
   @minValue(15)
   durationMinutes: int32;
 
-  @doc("Whether this event type is available for booking")
-  isActive: boolean;
 }
 
 @doc("Available time slot for booking (computed on the fly)")
@@ -175,8 +173,6 @@ model EventTypeUpdate {
   @minValue(15)
   durationMinutes?: int32;
 
-  @doc("Whether this event type is available for booking")
-  isActive?: boolean;
 }
 
 @doc("Request to create a new booking")

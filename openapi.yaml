@@ -634,7 +634,6 @@ components:
         - title
         - description
         - durationMinutes
-        - isActive
       properties:
         id:
           type: string
@@ -650,9 +649,6 @@ components:
           format: int32
           minimum: 15
           description: Duration in minutes
-        isActive:
-          type: boolean
-          description: Whether this event type is available for booking
       description: Type of event that a guest can book
     EventTypeCreate:
       type: object
@@ -687,9 +683,6 @@ components:
           format: int32
           minimum: 15
           description: Duration in minutes (min 15)
-        isActive:
-          type: boolean
-          description: Whether this event type is available for booking
       description: Request to update an existing event type
     NotFoundError:
       type: object
